@@ -1,0 +1,114 @@
+graph TB
+    subgraph "模型组件"
+        VAE[VAE编码器<br/>冻结]
+        TE1[文本编码器1<br/>冻结]
+        TE2[文本编码器2<br/>SDXL专用，冻结]
+        UNET[UNet2D<br/>可训练]
+        REF[参考UNet<br/>DPO专用，冻结]
+    end
+    
+    subgraph "输入数据处理"
+        IMG1[图像1 jpg_0]
+        IMG2[图像2 jpg_1] 
+        PROMPT[文本提示]
+        LABEL[标签 label_0]
+    end
+    
+    subgraph "DPO训练流程"
+        IMG1 --> TRANSFORM1[图像变换]
+        IMG2 --> TRANSFORM2[图像变换]
+        TRANSFORM1 --> CONCAT[通道拼接]
+        TRANSFORM2 --> CONCAT
+        LABEL --> FLIP{是否翻转?<br/>label_0==0}
+        FLIP -->|是| CONCAT
+        FLIP -->|否| CONCAT
+        
+        CONCAT --> VAE
+        VAE --> LATENT[潜在表示]
+        LATENT --> NOISE[添加噪声]
+        
+        PROMPT --> TE1
+        PROMPT --> TE2
+        TE1 --> EMB1[文本嵌入1]
+        TE2 --> EMB2[文本嵌入2]
+        EMB1 --> COND[条件信息]
+        EMB2 --> COND
+        
+        NOISE --> UNET
+        COND --> UNET
+        UNET --> PRED1[模型预测]
+        
+        NOISE --> REF
+        COND --> REF
+        REF --> PRED2[参考预测]
+        
+        PRED1 --> LOSS[DPO损失计算<br/>使用偏好对比]
+        PRED2 --> LOSS
+    end
+    
+    subgraph "SFT训练流程"
+        IMG_SFT[单张图像] --> TRANSFORM_SFT[图像变换]
+        TRANSFORM_SFT --> VAE_SFT[VAE编码]
+        VAE_SFT --> LATENT_SFT[潜在表示]
+        LATENT_SFT --> NOISE_SFT[添加噪声]
+        
+        PROMPT_SFT[文本提示] --> TE_SFT[文本编码]
+        TE_SFT --> COND_SFT[条件信息]
+        
+        NOISE_SFT --> UNET_SFT[UNet预测]
+        COND_SFT --> UNET_SFT
+        UNET_SFT --> MSE[MSE损失]
+    end
+    
+    subgraph "优化过程"
+        LOSS --> BACKWARD[反向传播]
+        MSE --> BACKWARD
+        BACKWARD --> OPTIMIZER[优化器更新<br/>AdamW/Adafactor]
+        OPTIMIZER --> SCHEDULER[学习率调度]
+        SCHEDULER --> CLIP[梯度裁剪]
+    end
+    
+    %% 深色主题样式
+    style VAE fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style TE1 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style TE2 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style REF fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style UNET fill:#1a202c,stroke:#2d3748,stroke-width:2px,color:#f7fafc
+    style LOSS fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    style MSE fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    
+    %% 输入数据处理块
+    style IMG1 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style IMG2 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style PROMPT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style LABEL fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    
+    %% DPO训练流程块
+    style TRANSFORM1 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style TRANSFORM2 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style CONCAT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style FLIP fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    style LATENT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style NOISE fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style EMB1 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style EMB2 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style COND fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style PRED1 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style PRED2 fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    
+    %% SFT训练流程块
+    style IMG_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style TRANSFORM_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style VAE_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style LATENT_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style NOISE_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style PROMPT_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style TE_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style COND_SFT fill:#2d3748,stroke:#4a5568,stroke-width:2px,color:#f7fafc
+    style UNET_SFT fill:#1a202c,stroke:#2d3748,stroke-width:2px,color:#f7fafc
+    
+    %% 优化过程块
+    style BACKWARD fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    style OPTIMIZER fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    style SCHEDULER fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
+    style CLIP fill:#2c5282,stroke:#3182ce,stroke-width:2px,color:#f7fafc
