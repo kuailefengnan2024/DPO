@@ -1,0 +1,27 @@
+{
+  // A human-readable name for the dev container.
+  "name": "DiffusionDPO Dev Container",
+
+  // Tells VS Code to use your docker-compose.yml file.
+  "dockerComposeFile": "../docker-compose.yml",
+
+  // The name of the service within your docker-compose.yml file to use.
+  "service": "dpo",
+
+  // The folder inside the container where your code is and where VS Code should open.
+  "workspaceFolder": "/app",
+
+  // Optional: Add some useful VS Code extensions into the container for a better experience.
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance"
+      ]
+    }
+  },
+
+  // A command to run after the container is created.
+  "postCreateCommand": "echo 'Container created successfully. You can now run the training scripts.'"
+}
+

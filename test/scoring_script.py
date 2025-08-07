@@ -13,7 +13,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from utils.aes_utils import Selector as AestheticsScorer
 from utils.hps_utils import Selector as HpsScorer
 from utils.imagereward_utils import Selector as ImageRewardScorer
-from utils.pickscore_utils import PickScoreScorer
+from utils.pickscore_utils import Selector as PickScoreScorer
 
 def get_prompt_from_filename(filename):
     """从文件名中提取提示词 (移除批次信息和文件后缀)"""
