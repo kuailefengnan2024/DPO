@@ -44,14 +44,10 @@ ENV TZ=Etc/UTC
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gnupg ca-certificates && \
-    apt-key adv --keyserver keyserver.ubuntu.com --recv-keys BA6932366A755776 && \
-    echo "deb http://ppa.launchpad.net/deadsnakes/ppa/ubuntu jammy main" > /etc/apt/sources.list.d/deadsnakes.list && \
-    apt-get update && \
     apt-get install -y --no-install-recommends \
-    python3.9 \
-    python3.9-dev \
-    python3.9-distutils \
+    python3 \
+    python3-pip \
+    python3-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -66,9 +62,6 @@ RUN apt-get update && \
 # 官方的 `get-pip.py` 引导脚本。我们用 `curl` 下载它，并用我们指定的 `python3.9`
 # 来执行。这确保了 `pip` 被正确地安装，并与其对应的 Python 解释器完美关联。
 #
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3.9 get-pip.py && \
-    rm get-pip.py
 
 # --------------------------------------------------------------------------------------------------
 # 阶段 4: 为方便起见，建立软链接 (SYMLINKS)
@@ -77,8 +70,8 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
 # 创建软链接，使得后续的命令以及用户进入容器后，可以直接使用 `python` 和 `pip` 命令，
 # 而无需每次都输入完整的版本号。这提升了可读性和便利性。
 #
-RUN ln -s /usr/bin/python3.9 /usr/bin/python && \
-    ln -s /usr/local/bin/pip /usr/bin/pip
+RUN ln -sf /usr/bin/python3 /usr/bin/python && \
+    ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # --------------------------------------------------------------------------------------------------
 # 阶段 5: 应用程序设置
@@ -109,9 +102,10 @@ COPY requirements.txt .
 # - `-i ... --trusted-host ...`: 使用国内的清华镜像源来加速下载，解决了最初的网络超时问题。
 # - `--no-cache-dir`: 避免由损坏的缓存引起的问题，并保持镜像体积小。
 #
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn \
-    torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && \
-    pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn \
+RUN pip install --timeout=600 --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
+    torch torchvision torchaudio
+
+RUN pip install --timeout=600 --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
     -r requirements.txt
 
 # --------------------------------------------------------------------------------------------------
