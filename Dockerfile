@@ -31,6 +31,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 \
     python3-dev \
+    python3-venv \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # --------------------------------------------------------------------------------------------------
@@ -38,15 +40,13 @@ RUN apt-get update && \
 # --------------------------------------------------------------------------------------------------
 # # 已解决的问题:
 # - apt 安装的 pip 存在 `.pyc` 文件损坏，导致 "bad marshal data" 错误。
+# - `ensurepip` 在 Debian/Ubuntu 的系统 python 中被禁用。
 #
 # # 决策逻辑:
-# 我们彻底放弃使用 apt 来安装 pip。转而采用Python官方推荐的引导方式：
-# 1. 使用 `python3 -m ensurepip` 命令。这是Python内置的、最可靠的方式，
-#    用于在一个环境中安装一个基础版本的 pip。
-# 2. 立即使用这个刚安装好的基础版 pip，配合国内镜像源，将自身升级到最新版本。
-#    这确保我们后续使用的是一个功能完整且无Bug的最新版 pip。
+# 我们遵循 Ubuntu 的官方建议，使用 apt 来安装 `python3-pip`。
+# 然后，立即使用这个刚安装好的基础版 pip，配合国内镜像源，将自身升级到最新版本。
+# 这确保我们后续使用的是一个功能完整且无Bug的最新版 pip。
 #
-RUN python3 -m ensurepip
 RUN pip install --timeout=600 --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com --upgrade pip
 
 # --------------------------------------------------------------------------------------------------
@@ -70,10 +70,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install --timeout=600 --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
-    torch torchvision torchaudio
-
-RUN pip install --timeout=600 --no-cache-dir -i https://mirrors.aliyun.com/pypi/simple/ --trusted-host mirrors.aliyun.com \
-    -r requirements.txt
+    torch torchvision torchaudio -r requirements.txt
 
 # --------------------------------------------------------------------------------------------------
 # 阶段 6: 最终的应用程序设置
